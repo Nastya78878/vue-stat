@@ -9,11 +9,11 @@
       <button class="btn" @click="goToStats">General Statistics</button>
       <button class="btn" @click="goToStatViz">Visualization Statistics</button>
       <button class="btn add-btn" @click="showForm = !showForm">
-        {{ showForm ? '✕ Close' : '+ Add Transaction' }}
+        {{ showForm ? 'Close' : 'Add Transaction' }}
       </button>
     </div>
 
-    <transition name="slide-fade">
+    <transition name="fade-slide">
       <section v-if="showForm" class="manual-entry">
         <h2>Add Transaction</h2>
         <form @submit.prevent="addTransaction">
@@ -30,17 +30,13 @@
             <input v-model="form.categoryName" type="text" required />
           </div>
           <div class="field radio-group">
-            <label>
-              <input type="radio" value="INCOME" v-model="form.categoryType" />
-              Income
-            </label>
-            <label>
-              <input type="radio" value="EXPENSE" v-model="form.categoryType" />
-              Expense
-            </label>
+            <label><input type="radio" value="INCOME" v-model="form.categoryType" /> Income</label>
+            <label
+              ><input type="radio" value="EXPENSE" v-model="form.categoryType" /> Expense</label
+            >
           </div>
-          <button class="btn" type="submit" :disabled="adding">
-            {{ adding ? 'Adding…' : 'Add Transaction' }}
+          <button class="btn submit-btn" type="submit" :disabled="adding">
+            {{ adding ? 'Adding…' : 'Submit' }}
           </button>
         </form>
       </section>
@@ -57,94 +53,56 @@ const router = useRouter()
 const adding = ref(false)
 const showForm = ref(false)
 
-async function logout(): Promise<void> {
-  try {
-    await axios.post('/auth/logout', {}, { withCredentials: true })
-    router.push('/')
-  } catch (err) {
-    console.error('Logout failed', err)
-  }
+async function logout() {
+  await axios.post('/auth/logout', {}, { withCredentials: true }).catch(() => {})
+  router.push('/')
 }
 
 function importStats() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept =
-    '.xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  input.onchange = async () => {
-    const file = input.files?.[0]
-    if (!file) return
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    if (ext !== 'xls' && ext !== 'xlsx') {
-      alert('Please select an Excel file (.xls or .xlsx)')
+  const inp = document.createElement('input')
+  inp.type = 'file'
+  inp.accept = '.xls,.xlsx'
+  inp.onchange = async () => {
+    const f = inp.files?.[0]
+    if (!f) return
+    const ext = f.name.split('.').pop()?.toLowerCase()
+    if (!['xls', 'xlsx'].includes(ext!)) {
+      alert('Excel only')
       return
     }
-    const formData = new FormData()
-    formData.append('file', file)
-    try {
-      await axios.post('/transactions/import', formData, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      alert('Statistics imported successfully')
-    } catch (e) {
-      console.error(e)
-      alert('Failed to import statistics')
-    }
+    const fd = new FormData()
+    fd.append('file', f)
+    await axios
+      .post('/transactions/import', fd, { withCredentials: true })
+      .catch(() => alert('Import failed'))
   }
-  input.click()
+  inp.click()
 }
 
 function goToStats() {
-  router.push({ path: '/stat' })
+  router.push('/stat')
 }
-
 function goToStatViz() {
-  router.push({ path: '/statviz' })
+  router.push('/statviz')
 }
 
-interface ManualTx {
+interface Tx {
   amount: number
   comment?: string
   categoryName: string
   categoryType: 'INCOME' | 'EXPENSE'
 }
-
-const form = reactive<ManualTx>({
-  amount: 0,
-  comment: '',
-  categoryName: '',
-  categoryType: 'EXPENSE',
-})
+const form = reactive<Tx>({ amount: 0, comment: '', categoryName: '', categoryType: 'EXPENSE' })
 
 async function addTransaction() {
   if (!form.amount || !form.categoryName.trim()) return
   adding.value = true
-  try {
-    await axios.post(
-      '/transactions',
-      [
-        {
-          amount: form.amount,
-          comment: form.comment || undefined,
-          categoryName: form.categoryName.trim(),
-          categoryType: form.categoryType,
-        },
-      ],
-      { withCredentials: true },
-    )
-    alert('Transaction added')
-    form.amount = 0
-    form.comment = ''
-    form.categoryName = ''
-    form.categoryType = 'EXPENSE'
-    showForm.value = false
-  } catch (err) {
-    console.error('Add transaction failed', err)
-    alert('Failed to add transaction')
-  } finally {
-    adding.value = false
-  }
+  await axios
+    .post('/transactions', [form], { withCredentials: true })
+    .catch(() => alert('Add failed'))
+  adding.value = false
+  showForm.value = false
+  Object.assign(form, { amount: 0, comment: '', categoryName: '', categoryType: 'EXPENSE' })
 }
 </script>
 
@@ -153,12 +111,13 @@ async function addTransaction() {
   max-width: 480px;
   margin: 2rem auto;
   padding: 1rem;
-  text-align: center;
   font-family: sans-serif;
+  color: #333;
 }
 
 .profile-title {
   font-size: 1.5rem;
+  text-align: center;
   margin-bottom: 1rem;
 }
 
@@ -170,84 +129,83 @@ async function addTransaction() {
 }
 
 .btn {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1.2rem;
   border: 1px solid #333;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
+  color: #333;
   font-size: 1rem;
   cursor: pointer;
   transition:
     background 0.2s,
-    color 0.2s;
+    transform 0.1s;
+}
+
+.btn:hover {
+  background: #333;
+  color: #fafafa;
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
 }
 
 .add-btn {
   font-weight: bold;
-  color: #2a9d8f;
-}
-
-.btn:hover:not(:disabled) {
-  background: #333;
-  color: #fff;
 }
 
 .manual-entry {
-  background: #fafafa;
   padding: 1rem;
+  border: 1px solid #eee;
   border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  background: #fafafa;
   margin-bottom: 1rem;
-  text-align: left;
 }
 
 .manual-entry h2 {
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-  color: #264653;
-  border-bottom: 1px solid #eee;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+  border-bottom: 1px solid #ddd;
   padding-bottom: 0.5rem;
 }
 
 .field {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .field label {
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
   font-size: 0.9rem;
 }
 
-.field input[type='text'],
-.field input[type='number'] {
+.field input {
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 1rem;
 }
 
 .radio-group {
   display: flex;
-  justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.radio-group label {
-  font-size: 0.9rem;
+.submit-btn {
+  width: 100%;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
-
-/* Transition */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
+.fade-slide-enter-from,
+.fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }

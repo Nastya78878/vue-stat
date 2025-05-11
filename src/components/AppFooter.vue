@@ -28,9 +28,7 @@
   </footer>
 </template>
 
-<script setup lang="ts">
-// ничего не требуется
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
 .app-footer {
