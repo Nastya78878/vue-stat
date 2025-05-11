@@ -3,11 +3,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import HomeView from '../components/ProfileComponents/ProfileComponent.vue'
 import AuthComponent from '../components/AuthComponents/AuthComponent.vue'
+import stat from '../components/ProfileComponents/GeneralComponent.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', name: 'auth', component: AuthComponent },
   { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
+  { path: '/stat', name: 'stat', component: stat, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({
