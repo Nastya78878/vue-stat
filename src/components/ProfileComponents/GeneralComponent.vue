@@ -1,5 +1,7 @@
 <!-- components/StatsComponent.vue -->
 <template>
+  <AppHeader />
+
   <div class="stats-container">
     <h2 class="title">Statistics</h2>
 
@@ -64,6 +66,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useStatsStore } from '../../stores/stats'
+import AppHeader from '../AppHeader.vue'
 
 const statsStore = useStatsStore()
 

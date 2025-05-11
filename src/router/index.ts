@@ -4,12 +4,19 @@ import type { RouteRecordRaw } from 'vue-router'
 import HomeView from '../components/ProfileComponents/ProfileComponent.vue'
 import AuthComponent from '../components/AuthComponents/AuthComponent.vue'
 import stat from '../components/ProfileComponents/GeneralComponent.vue'
+import ChartVisualization from '@/components/ProfileComponents/ChartVisualization.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', name: 'auth', component: AuthComponent },
   { path: '/home', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/stat', name: 'stat', component: stat, meta: { requiresAuth: true } },
+  {
+    path: '/statviz',
+    name: 'ChartVisualization',
+    component: ChartVisualization,
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

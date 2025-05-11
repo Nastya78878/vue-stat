@@ -24,6 +24,7 @@ export const useStatsStore = defineStore('stats', () => {
     const res = await axios.get<SummaryItem[]>(
       `/transactions/summary?startDate=${startDate}&endDate=${endDate}`,
     )
+    console.log('API /summary data:', res.data)
     summary.value = res.data
   }
 
