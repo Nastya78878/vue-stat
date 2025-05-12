@@ -3,8 +3,8 @@
   <header class="app-header">
     <h1 class="logo" @click="goHome">Стата</h1>
     <nav class="nav-buttons">
-      <button class="btn" @click="goHome">Home</button>
-      <button class="btn" @click="logout">Logout</button>
+      <button class="btn" @click="goHome">Главная</button>
+      <button class="btn" @click="logout">Выход</button>
     </nav>
   </header>
 </template>
@@ -35,6 +35,13 @@ async function logout() {
   padding: 0.75rem 1.5rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   border-bottom: 2px solid #eee;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+.app-header:hover {
+  background: #333;
 }
 
 .logo {
@@ -43,6 +50,11 @@ async function logout() {
   color: #264653;
   cursor: pointer;
   user-select: none;
+  transition: color 0.3s ease;
+}
+
+.app-header:hover .logo {
+  color: #fafafa;
 }
 
 .nav-buttons {
@@ -60,6 +72,12 @@ async function logout() {
   transition:
     background 0.2s,
     color 0.2s;
+  color: #333;
+}
+
+.app-header:hover .btn {
+  color: #fafafa;
+  border-color: #fafafa;
 }
 
 .btn:hover {

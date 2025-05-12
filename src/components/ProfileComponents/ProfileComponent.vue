@@ -1,45 +1,49 @@
-<!-- components/Profile.vue -->
 <template>
   <div class="profile-container">
-    <h1 class="profile-title">Profile</h1>
+    <h1 class="profile-title">Профиль</h1>
 
     <div class="buttons">
-      <button class="btn" @click="logout">Logout</button>
-      <button class="btn" @click="importStats">Import Statistics</button>
-      <button class="btn" @click="goToStats">General Statistics</button>
-      <button class="btn" @click="goToStatViz">Visualization Statistics</button>
+      <button class="btn" @click="logout">Выйти</button>
+      <button class="btn" @click="importStats">Импорт статистики</button>
+      <button class="btn" @click="goToStats">Общая статистика</button>
+      <button class="btn" @click="goToStatViz">Визуализация статистики</button>
       <button class="btn add-btn" @click="showForm = !showForm">
-        {{ showForm ? 'Close' : 'Add Transaction' }}
+        {{ showForm ? 'Закрыть' : 'Добавить транзакцию' }}
       </button>
     </div>
 
     <transition name="fade-slide">
       <section v-if="showForm" class="manual-entry">
-        <h2>Add Transaction</h2>
+        <h2>Добавить транзакцию</h2>
         <form @submit.prevent="addTransaction">
           <div class="field">
-            <label>Amount</label>
+            <label>Сумма</label>
             <input v-model.number="form.amount" type="number" step="0.01" required />
           </div>
           <div class="field">
-            <label>Comment</label>
+            <label>Комментарий</label>
             <input v-model="form.comment" type="text" />
           </div>
           <div class="field">
-            <label>Category</label>
+            <label>Категория</label>
             <input v-model="form.categoryName" type="text" required />
           </div>
           <div class="field radio-group">
-            <label><input type="radio" value="INCOME" v-model="form.categoryType" /> Income</label>
-            <label
-              ><input type="radio" value="EXPENSE" v-model="form.categoryType" /> Expense</label
-            >
+            <label> <input type="radio" value="INCOME" v-model="form.categoryType" /> Доход </label>
+            <label>
+              <input type="radio" value="EXPENSE" v-model="form.categoryType" /> Расход
+            </label>
           </div>
           <button class="btn submit-btn" type="submit" :disabled="adding">
-            {{ adding ? 'Adding…' : 'Submit' }}
+            {{ adding ? 'Добавление…' : 'Отправить' }}
           </button>
         </form>
       </section>
+    </transition>
+
+    <!-- Toast Notification -->
+    <transition name="toast">
+      <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
     </transition>
   </div>
 </template>
@@ -52,6 +56,12 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const adding = ref(false)
 const showForm = ref(false)
+const toastMessage = ref('')
+
+function showToast(msg: string) {
+  toastMessage.value = msg
+  setTimeout(() => (toastMessage.value = ''), 3000)
+}
 
 async function logout() {
   await axios.post('/auth/logout', {}, { withCredentials: true }).catch(() => {})
@@ -67,14 +77,15 @@ function importStats() {
     if (!f) return
     const ext = f.name.split('.').pop()?.toLowerCase()
     if (!['xls', 'xlsx'].includes(ext!)) {
-      alert('Excel only')
+      showToast('Разрешены только файлы Excel')
       return
     }
     const fd = new FormData()
     fd.append('file', f)
     await axios
       .post('/transactions/import', fd, { withCredentials: true })
-      .catch(() => alert('Import failed'))
+      .then(() => showToast('Файл успешно загружен'))
+      .catch(() => showToast('Ошибка импорта'))
   }
   inp.click()
 }
@@ -99,7 +110,8 @@ async function addTransaction() {
   adding.value = true
   await axios
     .post('/transactions', [form], { withCredentials: true })
-    .catch(() => alert('Add failed'))
+    .then(() => showToast('Транзакция добавлена'))
+    .catch(() => showToast('Ошибка добавления'))
   adding.value = false
   showForm.value = false
   Object.assign(form, { amount: 0, comment: '', categoryName: '', categoryType: 'EXPENSE' })
@@ -208,5 +220,28 @@ async function addTransaction() {
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+/* Toast styles */
+.toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.95rem;
+  z-index: 1000;
+}
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
 }
 </style>

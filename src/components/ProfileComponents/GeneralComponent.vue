@@ -3,27 +3,27 @@
   <AppHeader />
 
   <div class="stats-container">
-    <h2 class="title">Statistics</h2>
+    <h2 class="title">Статистика</h2>
 
     <div class="date-selector">
       <label>
-        Start
+        Начало
         <input type="date" v-model="startDate" />
       </label>
       <label>
-        End
+        Конец
         <input type="date" v-model="endDate" />
       </label>
       <button class="btn" @click="loadStats" :disabled="loading">
-        {{ loading ? 'Loading…' : 'Apply' }}
+        {{ loading ? 'Загрузка…' : 'Применить' }}
       </button>
-      <button class="btn" @click="downloadPdf" :disabled="loading">Download PDF</button>
+      <button class="btn" @click="downloadPdf" :disabled="loading">Скачать PDF</button>
     </div>
 
-    <div v-if="loading" class="loading">Loading…</div>
+    <div v-if="loading" class="loading">Загрузка…</div>
 
     <section v-else class="section summary-section">
-      <h3 class="section-title">Summary</h3>
+      <h3 class="section-title">Сводка</h3>
       <ul class="summary-list">
         <li v-for="item in statsStore.summary" :key="item.categoryName" class="summary-item">
           <span class="item-name">{{ item.categoryName }}</span>
@@ -39,22 +39,22 @@
     </section>
 
     <section class="section general-section">
-      <h3 class="section-title">General Statistics</h3>
+      <h3 class="section-title">Общая статистика</h3>
       <dl class="general-list">
         <div class="dl-row">
-          <dt>Average Income</dt>
+          <dt>Средний доход</dt>
           <dd>{{ statsStore.stats?.averageIncome }}</dd>
         </div>
         <div class="dl-row">
-          <dt>Average Expense</dt>
+          <dt>Средние расходы</dt>
           <dd>{{ statsStore.stats?.averageExpense }}</dd>
         </div>
         <div class="dl-row">
-          <dt>Median Amount</dt>
+          <dt>Медианная сумма</dt>
           <dd>{{ statsStore.stats?.medianAmount }}</dd>
         </div>
         <div class="dl-row">
-          <dt>Mode(s)</dt>
+          <dt>Мода(ы)</dt>
           <dd>{{ statsStore.stats?.modeAmount.join(', ') }}</dd>
         </div>
       </dl>

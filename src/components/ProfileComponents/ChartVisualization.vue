@@ -1,56 +1,60 @@
-<!-- components/StatsVisualization.vue -->
 <template>
   <AppHeader />
 
   <div class="charts-container">
-    <h2 class="title">Data Visualization</h2>
+    <h2 class="title">Визуализация данных</h2>
 
     <div class="controls">
       <div class="date-selector">
         <label>
-          Start
+          Начало
           <input type="date" v-model="startDate" />
         </label>
         <label>
-          End
+          Конец
           <input type="date" v-model="endDate" />
         </label>
         <button class="btn" @click="reload" :disabled="loading">
-          {{ loading ? 'Loading…' : 'Apply' }}
+          {{ loading ? 'Загрузка…' : 'Применить' }}
         </button>
       </div>
 
       <div class="filter-selector">
         <label>
           <input type="radio" value="all" v-model="filterType" />
-          All
+          Все
         </label>
         <label>
           <input type="radio" value="Пополнение" v-model="filterType" />
-          Income
+          Пополнение
         </label>
         <label>
           <input type="radio" value="Трата" v-model="filterType" />
-          Expense
+          Траты
         </label>
       </div>
     </div>
 
-    <div v-if="loading" class="loading">Loading charts…</div>
-    <div v-else>
+    <div v-if="loading" class="loading">Загрузка диаграмм…</div>
+    <div v-else class="charts-grid">
       <div class="chart-card">
-        <h3>Category Share (Pie)</h3>
+        <h3>Доля по категориям (Круговая диаграмма)</h3>
         <Pie :data="pieData" :options="pieOpts" />
       </div>
 
       <div class="chart-card">
-        <h3>Amounts by Category (Bar)</h3>
+        <h3>Суммы по категориям (Столбчатая диаграмма)</h3>
         <Bar :data="barData" :options="barOpts" />
       </div>
 
       <div class="chart-card">
-        <h3>Distribution (Histogram)</h3>
+        <h3>Распределение (Гистограмма)</h3>
         <Bar :data="histData" :options="histOpts" />
+      </div>
+
+      <div class="chart-card">
+        <h3>Распределение по категориям (Полярная диаграмма)</h3>
+        <PolarArea :data="polarData" :options="polarOpts" />
       </div>
     </div>
   </div>
@@ -59,7 +63,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useStatsStore } from '../../stores/stats'
-import { Pie, Bar } from 'vue-chartjs'
+import { Pie, Bar, PolarArea } from 'vue-chartjs'
 import AppHeader from '../AppHeader.vue'
 
 import {
@@ -71,9 +75,19 @@ import {
   BarElement,
   CategoryScale,
   LinearScale,
+  RadialLinearScale,
 } from 'chart.js'
 
-ChartJS.register(Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale)
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  RadialLinearScale,
+)
 
 const statsStore = useStatsStore()
 
@@ -133,7 +147,7 @@ const barData = computed(() => ({
   labels: filtered.value.map((i) => i.categoryName),
   datasets: [
     {
-      label: 'Amount',
+      label: 'Сумма',
       data: filtered.value.map((i) => i.totalAmount),
       backgroundColor: filtered.value.map((_, idx) => getColor(idx)),
       borderColor: filtered.value.map((_, idx) => palette[idx % palette.length]),
@@ -169,7 +183,7 @@ const histData = computed(() => {
     labels,
     datasets: [
       {
-        label: 'Count',
+        label: 'Количество',
         data: counts,
         backgroundColor: palette[1] + '66',
         borderColor: palette[1],
@@ -183,11 +197,29 @@ const histOpts = {
   scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } } },
   plugins: { legend: { display: false } },
 }
+
+// Polar Area chart
+const polarData = computed(() => ({
+  labels: filtered.value.map((i) => i.categoryName),
+  datasets: [
+    {
+      data: filtered.value.map((i) => i.totalAmount),
+      backgroundColor: filtered.value.map((_, idx) => getColor(idx)),
+      borderColor: filtered.value.map((_, idx) => palette[idx % palette.length]),
+      borderWidth: 1,
+    },
+  ],
+}))
+const polarOpts = {
+  responsive: true,
+  scales: { r: { beginAtZero: true } },
+  plugins: { legend: { position: 'right' } },
+}
 </script>
 
 <style scoped>
 .charts-container {
-  max-width: 700px;
+  max-width: 900px;
   margin: 2rem auto;
   font-family: sans-serif;
   color: #333;
@@ -215,31 +247,10 @@ const histOpts = {
   gap: 0.75rem;
 }
 
-.date-selector label {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-}
-
-.date-selector input {
-  margin-top: 0.25rem;
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
 .filter-selector {
   display: flex;
   justify-content: center;
   gap: 1.5rem;
-}
-
-.filter-selector label {
-  font-size: 0.9rem;
-}
-
-.filter-selector input {
-  margin-right: 0.25rem;
 }
 
 .btn {
@@ -272,13 +283,24 @@ const histOpts = {
   margin-bottom: 1rem;
 }
 
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
 .chart-card {
   background: #fff;
   padding: 1rem;
   border-left: 6px solid #2a9d8f;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1rem;
+  transition: transform 0.3s ease-in-out;
+}
+
+.chart-card:hover {
+  transform: scale(1.2);
+  z-index: 2;
 }
 
 .chart-card h3 {
