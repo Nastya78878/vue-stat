@@ -139,7 +139,12 @@ const pieData = computed(() => ({
 }))
 const pieOpts = {
   responsive: true,
-  plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } } },
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: { boxWidth: 12, padding: 16 },
+    },
+  },
 }
 
 // Bar chart
@@ -213,7 +218,11 @@ const polarData = computed(() => ({
 const polarOpts = {
   responsive: true,
   scales: { r: { beginAtZero: true } },
-  plugins: { legend: { position: 'right' } },
+  plugins: {
+    legend: {
+      position: 'right' as const,
+    },
+  },
 }
 </script>
 

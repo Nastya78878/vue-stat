@@ -1,0 +1,11 @@
+# ── docker-compose.yml ────────────────────────────────────────────────────────
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vue3-app:latest
+    container_name: vue3_frontend
+    ports:
+      - '8080:8080'
+    restart: unless-stopped

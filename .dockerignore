@@ -1,0 +1,38 @@
+# Игнорировать node_modules
+node_modules
+**/node_modules
+
+# Игнорировать папки сборки
+dist
+build
+
+# Игнорировать файлы среды разработки
+.env
+.env.local
+.env.*.local
+
+# Игнорировать логи
+logs
+*.log
+
+# Игнорировать директории системных файлов
+.DS_Store
+Thumbs.db
+
+# Игнорировать файлы редакторов
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Игнорировать Git директорию
+.git
+.gitignore
+
+# Исключить все файлы, кроме необходимых для сборки
+!src/
+!package.json
+!package-lock.json
+!tsconfig.json

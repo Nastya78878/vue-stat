@@ -31,7 +31,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, Ref } from 'vue'
+import { reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 
