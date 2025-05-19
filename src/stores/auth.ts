@@ -8,7 +8,7 @@ axios.defaults.baseURL = 'http://localhost:3000'
 axios.defaults.withCredentials = true
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<string | null>(null)
+  const user = ref<{ id: string; name: string } | null>(null)
   const loading = ref(false)
 
   // Fetch current user based on existing cookie
@@ -17,8 +17,13 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await axios.get('/auth/profile')
       console.log('fetchUser response data:', res.data)
-      user.value = res.data.userId ?? null
-      console.log('fetchUser resolved userId:', user.value)
+      user.value = res.data.id
+        ? {
+            id: res.data.id,
+            name: res.data.name,
+          }
+        : null
+      console.log('fetchUser resolved user:', user.value)
     } catch (err) {
       console.error('fetchUser error:', err)
       user.value = null

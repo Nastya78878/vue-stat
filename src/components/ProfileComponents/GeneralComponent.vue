@@ -1,4 +1,3 @@
-<!-- components/StatsComponent.vue -->
 <template>
   <AppHeader />
 
@@ -24,8 +23,25 @@
 
     <section v-else class="section summary-section">
       <h3 class="section-title">Сводка</h3>
-      <ul class="summary-list">
-        <li v-for="item in statsStore.summary" :key="item.categoryName" class="summary-item">
+
+      <div class="filter-selector">
+        <label><input type="radio" value="all" v-model="filterType" /> Все</label>
+        <label><input type="radio" value="Пополнение" v-model="filterType" /> Пополнения</label>
+        <label><input type="radio" value="Расход" v-model="filterType" /> Траты</label>
+      </div>
+
+      <div v-if="filteredSummary.length === 0" class="empty-message">
+        {{
+          filterType === 'Пополнение'
+            ? 'Пополнений нет'
+            : filterType === 'Расход'
+              ? 'Трат нет'
+              : 'Операций нет'
+        }}
+      </div>
+
+      <ul v-else class="summary-list">
+        <li v-for="item in filteredSummary" :key="item.categoryName" class="summary-item">
           <span class="item-name">{{ item.categoryName }}</span>
           <span
             class="item-type"
@@ -33,37 +49,54 @@
           >
             {{ item.categoryType }}
           </span>
-          <span class="item-amount">{{ item.totalAmount }}</span>
+          <span class="item-amount">{{ formatAmount(item.totalAmount) }}</span>
         </li>
       </ul>
     </section>
 
     <section class="section general-section">
       <h3 class="section-title">Общая статистика</h3>
-      <dl class="general-list">
-        <div class="dl-row">
-          <dt>Средний доход</dt>
-          <dd>{{ statsStore.stats?.averageIncome }}</dd>
+      <div class="stats-cards animated-cards">
+        <!-- Средний доход -->
+        <div class="card average-card income-card">
+          <h4
+            class="card-title"
+            title="Средний арифметический – сумма всех значений, делённая на их количество"
+          >
+            Средний доход
+          </h4>
+          <p class="card-value">{{ formatAmount(statsStore.stats?.averageIncome) }}</p>
         </div>
-        <div class="dl-row">
-          <dt>Средние расходы</dt>
-          <dd>{{ statsStore.stats?.averageExpense }}</dd>
+        <!-- Средние расходы -->
+        <div class="card average-card expense-card">
+          <h4
+            class="card-title"
+            title="Средний арифметический – сумма всех значений, делённая на их количество"
+          >
+            Средние расходы
+          </h4>
+          <p class="card-value">{{ formatAmount(statsStore.stats?.averageExpense) }}</p>
         </div>
-        <div class="dl-row">
-          <dt>Медианная сумма</dt>
-          <dd>{{ statsStore.stats?.medianAmount }}</dd>
+        <!-- Медиана -->
+        <div
+          class="card median-card"
+          title="Медианная сумма – значение, которое делит упорядоченный ряд чисел пополам"
+        >
+          <h4 class="card-title">Медианная сумма</h4>
+          <p class="card-value">{{ formatAmount(statsStore.stats?.medianAmount) }}</p>
         </div>
-        <div class="dl-row">
-          <dt>Мода(ы)</dt>
-          <dd>{{ statsStore.stats?.modeAmount.join(', ') }}</dd>
+        <!-- Мода -->
+        <div class="card mode-card" title="Мода – значение(я), встречающиеся наиболее часто">
+          <h4 class="card-title">Мода(ы)</h4>
+          <p class="card-value">{{ firstModes }}</p>
         </div>
-      </dl>
+      </div>
     </section>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useStatsStore } from '../../stores/stats'
 import AppHeader from '../AppHeader.vue'
@@ -76,6 +109,28 @@ const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().sli
 const startDate = ref(weekAgo)
 const endDate = ref(today)
 const loading = ref(false)
+const filterType = ref<'all' | 'Пополнение' | 'Расход'>('all')
+
+const filteredSummary = computed(() =>
+  statsStore.summary.filter((item) =>
+    filterType.value === 'all'
+      ? true
+      : filterType.value === 'Пополнение'
+        ? item.categoryType === 'Пополнение'
+        : item.categoryType !== 'Пополнение',
+  ),
+)
+
+function formatAmount(value: number | undefined) {
+  return value == null ? '0 ₽' : Math.floor(value) + ' ₽'
+}
+
+const firstModes = computed(() => {
+  const modes = statsStore.stats?.modeAmount || []
+  const sliced = modes.slice(0, 3)
+  const formatted = sliced.map((m) => Math.floor(m)).join(', ')
+  return formatted + (modes.length > 3 ? '...' : '') + ' ₽'
+})
 
 async function loadStats() {
   loading.value = true
@@ -88,10 +143,7 @@ async function downloadPdf() {
   loading.value = true
   try {
     const url = `/transactions/report?startDate=${startDate.value}&endDate=${endDate.value}`
-    const response = await axios.get(url, {
-      responseType: 'blob',
-      withCredentials: true,
-    })
+    const response = await axios.get(url, { responseType: 'blob', withCredentials: true })
     const blob = new Blob([response.data], { type: 'application/pdf' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -110,7 +162,7 @@ onMounted(loadStats)
 
 <style scoped>
 .stats-container {
-  max-width: 480px;
+  max-width: 520px;
   margin: 2rem auto;
   padding: 1rem;
   font-family: sans-serif;
@@ -118,7 +170,7 @@ onMounted(loadStats)
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 1.9rem;
   margin-bottom: 1rem;
   border-bottom: 2px solid #ddd;
   display: inline-block;
@@ -145,9 +197,15 @@ onMounted(loadStats)
   border-radius: 4px;
 }
 
-.loading {
-  text-align: center;
-  font-style: italic;
+.filter-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-selector label {
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .section {
@@ -157,7 +215,7 @@ onMounted(loadStats)
 }
 
 .section-title {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid #eee;
   display: inline-block;
@@ -206,30 +264,82 @@ onMounted(loadStats)
   font-weight: 700;
 }
 
-.general-list {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 0.5rem 1rem;
-  margin: 0;
-  padding: 0;
+.animated-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.dl-row {
-  display: contents;
+.card {
+  flex: 1 1 45%;
+  min-width: 200px;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUpFade 0.6s forwards;
 }
 
-dt {
-  font-weight: 500;
+.card:nth-child(1) {
+  animation-delay: 0.1s;
 }
 
-dd {
-  text-align: right;
-  margin: 0;
+.card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes slideUpFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.average-card {
+  border-top: 4px solid;
+}
+
+.income-card {
+  border-color: #2a9d8f;
+}
+
+.expense-card {
+  border-color: #e76f51;
+}
+
+.median-card {
+  border-top: 4px solid #4a90e2;
+}
+
+.mode-card {
+  border-top: 4px solid #50e3c2;
+}
+
+.card-title {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
 }
 
 .btn {
   padding: 0.5rem 1rem;
-  min-width: 110px;
   border: 1px solid #333;
   border-radius: 4px;
   background: transparent;
@@ -249,5 +359,12 @@ dd {
 .btn:hover:not(:disabled) {
   background: #333;
   color: #fff;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 1rem;
+  color: #666;
+  font-style: italic;
 }
 </style>
