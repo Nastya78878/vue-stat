@@ -37,6 +37,12 @@
 
     <div v-if="loading" class="loading">Загрузка диаграмм…</div>
     <div v-else class="charts-grid">
+      <!-- Перемещаем линейный график в начало и делаем его широким -->
+      <div class="chart-card line-chart">
+        <h3>Динамика показателей (Линейный график)</h3>
+        <Line :data="lineData" :options="lineOpts" />
+      </div>
+
       <div class="chart-card">
         <h3>Доля по категориям (Круговая диаграмма)</h3>
         <Pie :data="pieData" :options="pieOpts" />
@@ -63,9 +69,8 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useStatsStore } from '../../stores/stats'
-import { Pie, Bar, PolarArea } from 'vue-chartjs'
+import { Pie, Bar, PolarArea, Line } from 'vue-chartjs'
 import AppHeader from '../AppHeader.vue'
-
 import {
   Chart as ChartJS,
   Title,
@@ -76,7 +81,10 @@ import {
   CategoryScale,
   LinearScale,
   RadialLinearScale,
+  LineElement,
+  PointElement,
 } from 'chart.js'
+import zoomPlugin from 'chartjs-plugin-zoom' // Добавляем zoom plugin
 
 ChartJS.register(
   Title,
@@ -87,6 +95,9 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   RadialLinearScale,
+  LineElement,
+  PointElement,
+  zoomPlugin, // Регистрируем zoom plugin
 )
 
 const statsStore = useStatsStore()
@@ -119,11 +130,97 @@ async function reload() {
 // initial load
 reload()
 
-// filter summary according to filterType
+// фильтрация данных по типу
 const filtered = computed(() => {
   if (filterType.value === 'all') return statsStore.summary
   return statsStore.summary.filter((i) => i.categoryType === filterType.value)
 })
+
+// Обновленная логика агрегирования дат для линейного графика
+const aggregatedDates = computed(() => {
+  const counts: Record<string, number> = {}
+
+  // Создаем все даты в диапазоне
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
+  const dates: string[] = []
+
+  // Этот цикл создает все даты в диапазоне
+  for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10)
+    counts[dateStr] = 0 // Инициализируем нулем каждую дату
+    dates.push(dateStr)
+  }
+
+  // Фильтруем данные согласно выбранному типу
+  const filteredData =
+    filterType.value === 'all'
+      ? statsStore.summary
+      : statsStore.summary.filter((i) => i.categoryType === filterType.value)
+
+  // Подсчитываем транзакции
+  filteredData.forEach((category) => {
+    category.dates.forEach((dateTime) => {
+      const date = dateTime.slice(0, 10)
+      if (counts[date] !== undefined) {
+        counts[date]++
+      }
+    })
+  })
+
+  return {
+    labels: dates,
+    data: dates.map((date) => counts[date]),
+  }
+})
+
+// Линейный график с агрегированными данными
+const lineData = computed(() => ({
+  labels: aggregatedDates.value.labels,
+  datasets: [
+    {
+      label: 'Количество транзакций',
+      data: aggregatedDates.value.data,
+      fill: false,
+      borderColor: '#2a9d8f',
+      tension: 0.1,
+    },
+  ],
+}))
+
+const lineOpts = {
+  responsive: true,
+  scales: {
+    x: { grid: { display: false } },
+    y: {
+      beginAtZero: true,
+      grid: { color: '#f0f0f0' },
+      min: 0, // Запрещаем значения ниже нуля
+    },
+  },
+  plugins: {
+    legend: { display: true },
+    zoom: {
+      zoom: {
+        wheel: { enabled: true },
+        pinch: { enabled: true },
+        mode: 'xy',
+        // Добавляем ограничения для зума
+        limits: {
+          y: { min: 0 },
+        },
+      },
+      pan: {
+        enabled: true,
+        mode: 'xy',
+        // Добавляем ограничения для перемещения
+        limits: {
+          y: { min: 0 },
+        },
+      },
+    },
+  },
+}
 
 // Pie chart
 const pieData = computed(() => ({
@@ -168,7 +265,17 @@ const barOpts = {
     x: { ticks: { maxRotation: 30, minRotation: 30 }, grid: { display: false } },
     y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
   },
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    zoom: {
+      zoom: {
+        wheel: { enabled: true },
+        pinch: { enabled: true },
+        mode: 'y',
+      },
+      pan: { enabled: true, mode: 'y' },
+    },
+  },
 }
 
 // Histogram (as bar)
@@ -200,7 +307,17 @@ const histData = computed(() => {
 const histOpts = {
   responsive: true,
   scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } } },
-  plugins: { legend: { display: false } },
+  plugins: {
+    legend: { display: false },
+    zoom: {
+      zoom: {
+        wheel: { enabled: true },
+        pinch: { enabled: true },
+        mode: 'y',
+      },
+      pan: { enabled: true, mode: 'y' },
+    },
+  },
 }
 
 // Polar Area chart
@@ -298,6 +415,16 @@ const polarOpts = {
   gap: 1rem;
 }
 
+.charts-grid::before {
+  content: '🔍 Используйте колесико мыши для приближения графиков';
+  display: block;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
 .chart-card {
   background: #fff;
   padding: 1rem;
@@ -318,5 +445,19 @@ const polarOpts = {
   color: #264653;
   border-bottom: 1px solid #eee;
   padding-bottom: 0.25rem;
+}
+
+.line-chart {
+  grid-column: 1 / -1; /* Занимает всю ширину сетки */
+  height: 400px; /* Увеличиваем высоту */
+  margin-bottom: 2rem; /* Отступ снизу */
+}
+
+.line-chart:hover {
+  transform: scale(1.05); /* Уменьшаем масштаб при наведении для большого графика */
+}
+
+.chart-card::after {
+  content: none; /* Убираем подсказку у каждой карточки */
 }
 </style>

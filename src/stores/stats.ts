@@ -7,6 +7,7 @@ interface SummaryItem {
   categoryName: string
   categoryType: string
   totalAmount: number
+  dates: string[]
 }
 
 interface GeneralStats {

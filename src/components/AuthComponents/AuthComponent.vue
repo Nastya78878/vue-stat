@@ -2,19 +2,72 @@
   <div :class="['auth-container', { registration: !isLoginMode }]">
     <h2>{{ isLoginMode ? 'Вход' : 'Регистрация' }}</h2>
     <form @submit.prevent="handleSubmit">
-      <div>
+      <!-- Имя -->
+      <div class="field">
         <label for="name">Имя</label>
-        <input id="name" v-model="form.name" type="text" required />
+        <input
+          id="name"
+          v-model="form.name"
+          type="text"
+          :class="{ 'input-error': nameError }"
+          required
+        />
+        <transition name="fade">
+          <p v-if="nameError" class="error-box">
+            <svg class="error-icon" viewBox="0 0 24 24">
+              <path d="M11.001 10h2v5h-2zm0 7h2v2h-2z" />
+              <path
+                d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8z"
+              />
+            </svg>
+            Логин минимум 3 символа
+          </p>
+        </transition>
       </div>
-      <div>
+
+      <!-- Пароль -->
+      <div class="field">
         <label for="password">Пароль</label>
-        <input id="password" v-model="form.password" type="password" required />
+        <input
+          id="password"
+          v-model="form.password"
+          type="password"
+          :class="{ 'input-error': passError }"
+          required
+        />
+        <transition name="fade">
+          <p v-if="passError" class="error-box">
+            <svg class="error-icon" viewBox="0 0 24 24">
+              <path d="M11.001 10h2v5h-2zm0 7h2v2h-2z" />
+              <path
+                d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8z"
+              />
+            </svg>
+            Пароль минимум 3 символа
+          </p>
+        </transition>
       </div>
-      <button class="btn" type="submit" :disabled="authStore.loading">
+
+      <!-- Общее сообщение об ошибке -->
+      <transition name="fade">
+        <div v-if="errorMessage" class="error-banner">
+          <svg class="banner-icon" viewBox="0 0 24 24">
+            <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z" />
+          </svg>
+          {{ errorMessage }}
+        </div>
+      </transition>
+
+      <!-- Кнопка отправки -->
+      <button
+        class="btn"
+        type="submit"
+        :disabled="authStore.loading || (!isLoginMode && !isFormValid)"
+      >
         {{
           authStore.loading
             ? isLoginMode
-              ? 'Вход в систему...'
+              ? 'Вход в системе...'
               : 'Регистрация...'
             : isLoginMode
               ? 'Войти'
@@ -22,6 +75,7 @@
         }}
       </button>
     </form>
+
     <p>
       <a href="#" @click.prevent="toggleMode">
         {{ isLoginMode ? 'Еще нет аккаунта?' : 'Уже есть аккаунт?' }}
@@ -31,7 +85,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
@@ -45,14 +99,31 @@ const router = useRouter()
 const authStore = useAuthStore()
 const isLoginMode: Ref<boolean> = ref(true)
 const form = reactive<AuthForm>({ name: '', password: '' })
+const errorMessage = ref<string>('')
+
+const isFormValid = computed(() => form.name.length >= 3 && form.password.length >= 3)
+
+// Ошибки по полям
+const nameError = computed(() => !isLoginMode.value && form.name.length > 0 && form.name.length < 3)
+const passError = computed(
+  () => !isLoginMode.value && form.password.length > 0 && form.password.length < 3,
+)
 
 function toggleMode(): void {
   isLoginMode.value = !isLoginMode.value
   form.name = ''
   form.password = ''
+  errorMessage.value = ''
 }
 
 async function handleSubmit(): Promise<void> {
+  errorMessage.value = ''
+
+  if (!isLoginMode.value && !isFormValid.value) {
+    errorMessage.value = 'Пожалуйста, исправьте поля'
+    return
+  }
+
   try {
     if (isLoginMode.value) {
       await authStore.login(form.name, form.password)
@@ -61,108 +132,137 @@ async function handleSubmit(): Promise<void> {
     }
     router.push({ name: 'home' })
   } catch (err) {
-    console.error('Ошибка аутентификации:', err)
+    errorMessage.value = isLoginMode.value
+      ? 'Неверный логин или пароль'
+      : 'Не удалось зарегистрироваться'
+    console.error(err)
   }
 }
 </script>
 
 <style scoped>
+/* Контейнер */
 .auth-container {
-  max-width: 400px;
-  margin: 2rem auto;
-  padding: 1rem;
-  text-align: center;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition:
-    background 0.3s ease,
-    color 0.3s ease,
-    transform 0.3s ease;
+  max-width: 500px; /* было 400px */
+  margin: 3rem auto; /* было 2rem */
+  padding: 2.5rem; /* было 1.5rem */
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
 }
-
 .auth-container:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
 }
 
+/* Заголовок */
 .auth-container h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  font-size: 1.75rem; /* чуть больше */
+  margin-bottom: 1.5rem; /* добавлен отступ снизу */
+  text-align: center; /* выравнивание по центру */
   color: #264653;
 }
 
-.auth-container form div {
-  margin-bottom: 0.75rem;
+/* Поля */
+.field {
+  margin-bottom: 1.5rem; /* чуть больше */
+  position: relative;
 }
-
-.auth-container label {
+.field label {
   display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.9rem;
-  transition: color 0.3s ease;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
 }
-
-.auth-container input {
+.field input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #aaa;
-  border-radius: 4px;
+  padding: 0.75rem 1rem; /* было 0.6rem 0.8rem */
+  border: 1px solid #ccc;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.btn {
-  padding: 0.75rem 1rem;
-  border: 1px solid #333;
-  border-radius: 4px;
-  background: transparent;
-  font-size: 1rem;
-  cursor: pointer;
   transition:
-    background 0.2s,
-    color 0.2s;
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+/* Ошибочное поле */
+.input-error {
+  border-color: #e63946 !important;
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2);
+}
+
+/* Подсказка у поля */
+.error-box {
+  display: flex;
+  align-items: center;
+  margin-top: 0.4rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #b91c1c;
+}
+.error-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.4rem;
+  fill: #b91c1c;
+}
+
+/* Общее баннерное сообщение */
+.error-banner {
+  display: flex;
+  align-items: center;
+  background: #ffedd5;
+  border: 1px solid #fcd34d;
+  padding: 0.8rem 1rem; /* чуть больше */
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+.banner-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-right: 0.5rem;
+  fill: #92400e;
+}
+
+/* Плавное появление */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Кнопка */
+.btn {
   width: 100%;
-}
-
-.btn:hover {
-  background: #333;
+  padding: 0.9rem; /* было 0.75rem */
+  font-size: 1.125rem; /* чуть крупнее */
+  border: none;
+  border-radius: 6px;
+  background: #264653;
   color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+.btn:not(:disabled):hover {
+  background: #1b3a4b;
 }
 
-.auth-container p {
-  text-align: center;
-  margin-top: 1rem;
-}
-
+/* Ссылка-переключатель */
 .auth-container a {
   color: #42b983;
   text-decoration: underline;
   cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-/* Дополнительные стили для режима регистрации (регистрация имеет те же цвета и плавные анимации, что и футер) */
-.auth-container.registration:hover {
-  background: #333;
-}
-
-.auth-container.registration:hover h2,
-.auth-container.registration:hover label,
-.auth-container.registration:hover input,
-.auth-container.registration:hover .btn,
-.auth-container.registration:hover a {
-  color: #fafafa;
-  border-color: #fafafa;
-}
-
-@media (max-width: 480px) {
-  .auth-container {
-    margin: 1rem;
-    padding: 0.5rem;
-  }
-  .btn {
-    padding: 0.5rem;
-  }
 }
 </style>
