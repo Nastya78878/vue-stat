@@ -40,13 +40,13 @@
       <!-- Добавляем новый график стоимости, который виден только при выборе конкретного типа -->
       <div v-if="filterType !== 'all'" class="chart-card line-chart">
         <h3>Динамика стоимости транзакций ({{ filterType }})</h3>
-        <Line :data="lineAmountData" :options="lineAmountOpts" />
+        <Line :data="lineAmountData" :options="lineAmountOpts as any" />
       </div>
 
       <!-- Существующий график количества транзакций -->
       <div class="chart-card line-chart">
         <h3>Динамика количества транзакций</h3>
-        <Line :data="lineData" :options="lineOpts" />
+        <Line :data="lineData" :options="lineOpts as any" />
       </div>
 
       <div class="chart-card">
@@ -56,12 +56,12 @@
 
       <div class="chart-card">
         <h3>Суммы по категориям (Столбчатая диаграмма)</h3>
-        <Bar :data="barData" :options="barOpts" />
+        <Bar :data="barData" :options="barOpts as any" />
       </div>
 
       <div class="chart-card">
         <h3>Распределение (Гистограмма)</h3>
-        <Bar :data="histData" :options="histOpts" />
+        <Bar :data="histData" :options="histOpts as any" />
       </div>
 
       <div class="chart-card">
@@ -277,7 +277,8 @@ const lineAmountData = computed(() => ({
     },
   ],
 }))
-
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: игнорируем несовместимость типа для plugins.zoom.pan.mode
 const lineAmountOpts = {
   responsive: true,
   scales: {

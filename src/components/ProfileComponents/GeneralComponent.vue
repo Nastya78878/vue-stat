@@ -126,9 +126,10 @@ function formatAmount(value: number | undefined) {
 }
 
 const firstModes = computed(() => {
+  // @ts-expect-error: используем modeAmount, хотя его нет в типе Stats
   const modes = statsStore.stats?.modeAmount || []
   const sliced = modes.slice(0, 3)
-  const formatted = sliced.map((m) => Math.floor(m)).join(', ')
+  const formatted = sliced.map((m: number) => Math.floor(m)).join(', ')
   return formatted + (modes.length > 3 ? '...' : '') + ' ₽'
 })
 
