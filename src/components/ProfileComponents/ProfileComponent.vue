@@ -41,6 +41,14 @@
       </section>
     </transition>
 
+    <!-- Loading Indicator -->
+    <transition name="fade">
+      <div v-if="isLoading" class="loading-indicator">
+        <div class="loader"></div>
+        <span>Загрузка файла...</span>
+      </div>
+    </transition>
+
     <!-- Toast Notification -->
     <transition name="toast">
       <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
@@ -57,6 +65,7 @@ const router = useRouter()
 const adding = ref(false)
 const showForm = ref(false)
 const toastMessage = ref('')
+const isLoading = ref(false)
 
 function showToast(msg: string) {
   toastMessage.value = msg
@@ -80,12 +89,16 @@ function importStats() {
       showToast('Разрешены только файлы Excel')
       return
     }
+    isLoading.value = true
     const fd = new FormData()
     fd.append('file', f)
     await axios
       .post('/transactions/import', fd, { withCredentials: true })
       .then(() => showToast('Файл успешно загружен'))
       .catch(() => showToast('Ошибка импорта'))
+      .finally(() => {
+        isLoading.value = false
+      })
   }
   inp.click()
 }
@@ -243,5 +256,55 @@ async function addTransaction() {
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
+}
+
+/* Заменяем старые стили загрузки на новые */
+.loading-indicator {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.loader {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #333;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  animation: rotation 1s linear infinite;
+}
+
+.loading-indicator span {
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
