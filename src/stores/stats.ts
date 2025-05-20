@@ -10,11 +10,16 @@ interface SummaryItem {
   dates: string[]
 }
 
+interface ModeItem {
+  amount: number
+  categoryType: string
+}
+
 interface GeneralStats {
   averageIncome: number
   averageExpense: number
   medianAmount: number
-  modeAmount: number[]
+  modeStats: ModeItem[]
 }
 
 export const useStatsStore = defineStore('stats', () => {

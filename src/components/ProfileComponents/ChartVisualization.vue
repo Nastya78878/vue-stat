@@ -37,9 +37,15 @@
 
     <div v-if="loading" class="loading">Загрузка диаграмм…</div>
     <div v-else class="charts-grid">
-      <!-- Перемещаем линейный график в начало и делаем его широким -->
+      <!-- Добавляем новый график стоимости, который виден только при выборе конкретного типа -->
+      <div v-if="filterType !== 'all'" class="chart-card line-chart">
+        <h3>Динамика стоимости транзакций ({{ filterType }})</h3>
+        <Line :data="lineAmountData" :options="lineAmountOpts" />
+      </div>
+
+      <!-- Существующий график количества транзакций -->
       <div class="chart-card line-chart">
-        <h3>Динамика показателей (Линейный график)</h3>
+        <h3>Динамика количества транзакций</h3>
         <Line :data="lineData" :options="lineOpts" />
       </div>
 
@@ -217,6 +223,84 @@ const lineOpts = {
         limits: {
           y: { min: 0 },
         },
+      },
+    },
+  },
+}
+
+// Добавляем новую логику для агрегирования сумм по датам
+const aggregatedAmounts = computed(() => {
+  const amounts: Record<string, number> = {}
+
+  // Создаем все даты в диапазоне
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
+  const dates: string[] = []
+
+  for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10)
+    amounts[dateStr] = 0
+    dates.push(dateStr)
+  }
+
+  // Фильтруем данные по выбранному типу (работает только для Пополнение или Трата)
+  const filteredData = statsStore.summary.filter((i) => i.categoryType === filterType.value)
+
+  // Суммируем транзакции по датам
+  filteredData.forEach((category) => {
+    const amountPerTransaction = category.totalAmount / category.dates.length
+    category.dates.forEach((dateTime) => {
+      const date = dateTime.slice(0, 10)
+      if (amounts[date] !== undefined) {
+        amounts[date] += amountPerTransaction
+      }
+    })
+  })
+
+  return {
+    labels: dates,
+    data: dates.map((date) => amounts[date]),
+  }
+})
+
+// Новый график для сумм
+const lineAmountData = computed(() => ({
+  labels: aggregatedAmounts.value.labels,
+  datasets: [
+    {
+      label: 'Сумма транзакций',
+      data: aggregatedAmounts.value.data,
+      fill: true,
+      borderColor: filterType.value === 'Пополнение' ? '#2a9d8f' : '#e76f51',
+      backgroundColor: filterType.value === 'Пополнение' ? '#2a9d8f33' : '#e76f5133',
+      tension: 0.1,
+    },
+  ],
+}))
+
+const lineAmountOpts = {
+  responsive: true,
+  scales: {
+    x: { grid: { display: false } },
+    y: {
+      beginAtZero: true,
+      grid: { color: '#f0f0f0' },
+      ticks: {
+        callback: (value: number) => `${value.toLocaleString('ru-RU')} ₽`,
+      },
+    },
+  },
+  plugins: {
+    legend: { display: true },
+    zoom: {
+      zoom: {
+        wheel: { enabled: true },
+        pinch: { enabled: true },
+        mode: 'xy',
+      },
+      pan: {
+        enabled: true,
+        mode: 'xy',
       },
     },
   },

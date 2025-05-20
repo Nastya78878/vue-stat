@@ -77,9 +77,9 @@
     </form>
 
     <p>
-      <a href="#" @click.prevent="toggleMode">
+      <button class="toggle-mode-btn" @click="toggleMode">
         {{ isLoginMode ? 'Еще нет аккаунта?' : 'Уже есть аккаунт?' }}
-      </a>
+      </button>
     </p>
   </div>
 </template>
@@ -259,10 +259,27 @@ async function handleSubmit(): Promise<void> {
   background: #1b3a4b;
 }
 
-/* Ссылка-переключатель */
-.auth-container a {
-  color: #42b983;
-  text-decoration: underline;
+/* Кнопка переключения режима */
+.toggle-mode-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: transparent;
+  border: 2px solid #264653;
+  border-radius: 6px;
+  color: #264653;
+  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-mode-btn:hover {
+  background: #264653;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.toggle-mode-btn:active {
+  transform: translateY(0);
 }
 </style>
