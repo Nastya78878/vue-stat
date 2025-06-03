@@ -18,7 +18,7 @@
         <form @submit.prevent="addTransaction">
           <div class="field">
             <label>Сумма</label>
-            <input v-model.number="form.amount" type="number" step="0.01" required />
+            <input v-model.number="form.amount" type="number" min="0" step="0.01" required />
           </div>
           <div class="field">
             <label>Комментарий</label>
@@ -84,11 +84,28 @@ function importStats() {
   inp.onchange = async () => {
     const f = inp.files?.[0]
     if (!f) return
-    const ext = f.name.split('.').pop()?.toLowerCase()
-    if (!['xls', 'xlsx'].includes(ext!)) {
-      showToast('Разрешены только файлы Excel')
+
+    // Проверяем MIME-тип файла
+    const validTypes = [
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/excel',
+      'application/x-excel',
+      'application/x-msexcel',
+    ]
+
+    if (!validTypes.includes(f.type)) {
+      showToast('Разрешены только файлы Excel (.xls, .xlsx)')
       return
     }
+
+    // Дополнительная проверка расширения
+    const ext = f.name.split('.').pop()?.toLowerCase()
+    if (!['xls', 'xlsx'].includes(ext!)) {
+      showToast('Разрешены только файлы Excel (.xls, .xlsx)')
+      return
+    }
+
     isLoading.value = true
     const fd = new FormData()
     fd.append('file', f)

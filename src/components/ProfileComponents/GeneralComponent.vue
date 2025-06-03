@@ -87,8 +87,24 @@
         </div>
         <!-- Мода -->
         <div class="card mode-card" title="Мода – значение(я), встречающиеся наиболее часто">
-          <h4 class="card-title">Мода(ы)</h4>
+          <h4 class="card-title">Общая мода</h4>
           <p class="card-value">{{ firstModes }}</p>
+        </div>
+        <!-- Моды доходов -->
+        <div
+          class="card mode-card income-mode"
+          title="Мода доходов – наиболее частые суммы доходов"
+        >
+          <h4 class="card-title">Мода доходов</h4>
+          <p class="card-value">{{ incomeModes }}</p>
+        </div>
+        <!-- Моды расходов -->
+        <div
+          class="card mode-card expense-mode"
+          title="Мода расходов – наиболее частые суммы расходов"
+        >
+          <h4 class="card-title">Мода расходов</h4>
+          <p class="card-value">{{ expenseModes }}</p>
         </div>
       </div>
     </section>
@@ -126,8 +142,21 @@ function formatAmount(value: number | undefined) {
 }
 
 const firstModes = computed(() => {
-  // @ts-expect-error: используем modeAmount, хотя его нет в типе Stats
   const modes = statsStore.stats?.modeAmount || []
+  const sliced = modes.slice(0, 3)
+  const formatted = sliced.map((m: number) => Math.floor(m)).join(', ')
+  return formatted + (modes.length > 3 ? '...' : '') + ' ₽'
+})
+
+const incomeModes = computed(() => {
+  const modes = statsStore.stats?.modeIncome || []
+  const sliced = modes.slice(0, 3)
+  const formatted = sliced.map((m: number) => Math.floor(m)).join(', ')
+  return formatted + (modes.length > 3 ? '...' : '') + ' ₽'
+})
+
+const expenseModes = computed(() => {
+  const modes = statsStore.stats?.modeExpense || []
   const sliced = modes.slice(0, 3)
   const formatted = sliced.map((m: number) => Math.floor(m)).join(', ')
   return formatted + (modes.length > 3 ? '...' : '') + ' ₽'
@@ -300,6 +329,14 @@ onMounted(loadStats)
   animation-delay: 0.4s;
 }
 
+.card:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.card:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
 @keyframes slideUpFade {
   to {
     opacity: 1;
@@ -325,6 +362,14 @@ onMounted(loadStats)
 
 .mode-card {
   border-top: 4px solid #50e3c2;
+}
+
+.income-mode {
+  border-top: 4px solid #2a9d8f;
+}
+
+.expense-mode {
+  border-top: 4px solid #e76f51;
 }
 
 .card-title {

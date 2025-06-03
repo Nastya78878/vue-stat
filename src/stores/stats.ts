@@ -20,6 +20,9 @@ interface GeneralStats {
   averageExpense: number
   medianAmount: number
   modeStats: ModeItem[]
+  modeIncome: number[] // новое поле для моды доходов
+  modeExpense: number[]
+  modeAmount: number[]
 }
 
 export const useStatsStore = defineStore('stats', () => {
