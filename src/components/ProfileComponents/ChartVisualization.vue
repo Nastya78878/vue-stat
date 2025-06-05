@@ -62,10 +62,14 @@
       </div>
 
       <!-- Гистограмма: частотное распределение транзакций по суммам -->
-      <div class="chart-card">
-        <h3>Гистограмма распределения транзакций по диапазонам сумм</h3>
-        <Bar :data="histData" :options="histOpts as any" />
+    <div class="chart-card">
+      <h3>Гистограмма распределения транзакций по диапазонам сумм</h3>
+      <Bar :data="histData" :options="histOpts as any" />
+      <div v-if="modalInterval.value" class="histogram-info">
+        <p><strong>Модальный интервал:</strong> {{ modalInterval.label }}</p>
+        <p><strong>Среднее модальное значение:</strong> {{ modalAverage.toLocaleString('ru-RU') }} ₽</p>
       </div>
+    </div>
 
       <!-- Полярная диаграмма: визуализация сумм по категориям -->
       <div class="chart-card">
@@ -371,15 +375,20 @@ const barOpts = {
 const histData = computed(() => {
   const vals = filtered.value.map((i) => i.totalAmount)
   if (!vals.length) return { labels: [], datasets: [] }
+  
   const min = Math.min(...vals),
     max = Math.max(...vals)
-  const bins = 5,
-    size = (max - min) / bins
+  const N = vals.length
+  const bins = Math.max(1, Math.ceil(1 + Math.log10(N) * 3.322))
+  const size = (max - min) / bins
+  
   const counts = Array(bins).fill(0)
   vals.forEach((v) => counts[Math.min(Math.floor((v - min) / size), bins - 1)]++)
+  
   const labels = counts.map(
     (_, i) => `${Math.round(min + i * size)}–${Math.round(min + (i + 1) * size)}`,
   )
+  
   return {
     labels,
     datasets: [
@@ -393,11 +402,56 @@ const histData = computed(() => {
     ],
   }
 })
+
+// Вычисляем модальный интервал (интервал с наибольшим количеством значений)
+const modalInterval = computed(() => {
+  if (!histData.value.labels.length) return { label: '', value: 0 }
+  
+  const maxCount = Math.max(...histData.value.datasets[0].data)
+  const maxIndex = histData.value.datasets[0].data.indexOf(maxCount)
+  
+  return {
+    label: histData.value.labels[maxIndex],
+    value: maxCount
+  }
+})
+
+// Вычисляем среднее модальное значение (середина модального интервала)
+const modalAverage = computed(() => {
+  if (!modalInterval.value.label) return 0
+  
+  const [min, max] = modalInterval.value.label.split('–').map(Number)
+  return (min + max) / 2
+})
+
 const histOpts = {
   responsive: true,
-  scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } } },
+  scales: { 
+    y: { 
+      beginAtZero: true, 
+      grid: { color: '#f0f0f0' },
+      title: {
+        display: true,
+        text: 'Количество транзакций'
+      }
+    },
+    x: {
+      title: {
+        display: true,
+        text: 'Диапазон сумм (₽)'
+      }
+    }
+  },
   plugins: {
     legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const label = context.dataset.label || ''
+          return `${label}: ${context.raw} транзакций`
+        }
+      }
+    },
     zoom: {
       zoom: {
         wheel: { enabled: true },
@@ -408,7 +462,6 @@ const histOpts = {
     },
   },
 }
-
 // Polar Area chart
 const polarData = computed(() => ({
   labels: filtered.value.map((i) => i.categoryName),
@@ -480,7 +533,17 @@ const polarOpts = {
     background 0.2s,
     color 0.2s;
 }
+.histogram-info {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
 
+.histogram-info p {
+  margin: 0.25rem 0;
+}
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
