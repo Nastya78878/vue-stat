@@ -446,7 +446,7 @@ const histOpts = {
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (context) => {
+        label: (context: { dataset: { label: string }; raw: any }) => {
           const label = context.dataset.label || ''
           return `${label}: ${context.raw} транзакций`
         }
